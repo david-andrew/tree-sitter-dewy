@@ -62,39 +62,32 @@ const SpecOps = {
 */
 const op_table = [
   { assoc: Associativity.PREFIX, ops: ["@"] },
-  {
-    assoc: Associativity.LEFT,
-    ops: [".", SpecOps.JUX_CALL, SpecOps.JUX_INDEX],
-    special: true,
-  }, // TODO: jux-call/jux-index go here
+  { assoc: Associativity.LEFT, ops: [".", SpecOps.JUX_CALL, SpecOps.JUX_INDEX], special: true },
   { assoc: Associativity.PREFIX, ops: ["`"] },
   { assoc: Associativity.POSTFIX, ops: ["`"] },
-  { assoc: Associativity.PREFIX, ops: [/not/i, "~"] },
+  { assoc: Associativity.PREFIX, ops: [/not/i, "~"] }, // tbd why precedence here is so high. might make more sense lower. or even have `not` be low precedence and `~` be high precedence
   { assoc: Associativity.RIGHT, ops: ["^"] },
-  // TODO: jux-mul goes here...
-  {
-    assoc: Associativity.LEFT,
-    ops: ["*", "/", "//", /tdiv/i, /rdiv/i, /cdiv/i, /fdiv/i, /mod/i, /rem/i],
-  },
+  { assoc: Associativity.LEFT, ops: [SpecOps.JUX_MUL], special: true },
+  { assoc: Associativity.LEFT, ops: ["*", "/", "//", /tdiv/i, /rdiv/i, /cdiv/i, /fdiv/i, /mod/i, /rem/i] },
   { assoc: Associativity.LEFT, ops: ["+", "-"] },
   { assoc: Associativity.LEFT, ops: ["<<", ">>", "<<<", ">>>", "<<!", "!>>"] },
   { assoc: Associativity.NONE, ops: [","] },
-  // TODO: range juxtapose goes here...
+  { assoc: Associativity.LEFT, ops: [SpecOps.JUX_RANGE], special: true },
   { assoc: Associativity.NONE, ops: [/in/i], special: true },
   { assoc: Associativity.LEFT, ops: ["=?", ">?", "<?", ">=?", "<=?"] },
   { assoc: Associativity.LEFT, ops: [/and/i, /nand/i, "&"] },
   { assoc: Associativity.LEFT, ops: [/xor/i, /xnor/i] },
   { assoc: Associativity.LEFT, ops: [/or/i, /nor/i, "|"] },
   { assoc: Associativity.LEFT, ops: [/as/i, /transmute/i] },
-  { assoc: Associativity.NONE, ops: [/of/i] }, // identifier of typeexpr
-  { assoc: Associativity.NONE, ops: [":"] },
-  { assoc: Associativity.LEFT, ops: [":>"] }, // x:int:>bool:>float:>int (((x:int):>bool):>float):>int
-  // { assoc: Associativity.RIGHT, ops: ["=>"] }, //# () => () => () => 42
+  { assoc: Associativity.NONE, ops: [/of/i], special: true }, // identifier of typeexpr
+  { assoc: Associativity.NONE, ops: [":"], special: true },
+  { assoc: Associativity.LEFT, ops: [":>"], special: true }, // x:int:>bool:>float:>int (((x:int):>bool):>float):>int
+  { assoc: Associativity.RIGHT, ops: ["=>"], special: true }, //# () => () => () => 42
   { assoc: Associativity.RIGHT, ops: ["|>"] },
   { assoc: Associativity.LEFT, ops: ["<|"] },
   { assoc: Associativity.RIGHT, ops: ["->", "<->"] }, //generally incoherent, and probably will be handled in semantic analysis
-  { assoc: Associativity.NONE, ops: ["=", "::"] },
-  { assoc: Associativity.NONE, ops: [/if/i, /loop/i, /else/i] },
+  { assoc: Associativity.NONE, ops: ["=", "::"], special: true },
+  { assoc: Associativity.NONE, ops: [/if/i, /loop/i, /else/i], special: true },
   { assoc: Associativity.POSTFIX, ops: [";"] }, //# postfix semicolon
 ].reverse();
 
@@ -137,10 +130,21 @@ const assocof = (symbol) => assocprec(symbol).assoc;
 module.exports = grammar({
   name: "dewy",
 
+  extras: ($) => [], // manually handle whitespcae because of juxtapose operators
+
   rules: {
-    // TODO: add the actual grammar rules
-    source_file: ($) => repeat($._expr),
+    // entrypoint
+    source_file: ($) => seq(optional($._w), optional(seq($._expr_seq, optional($._w)))),
+
+    // whitespace and comments
+    _block_comment: ($) => prec(0, seq("%{", repeat(choice($._block_comment, /./, "\n")), "}%")), // let tree sitter handle nesting
+    _line_comment: ($) => prec(-1, /%.*\n?/), // lower precedence than block comment
+    _whitespace: ($) => /\s+/,
+    _w: ($) => repeat1(choice($._whitespace, $._block_comment, $._line_comment)), //mandatory whitespace
+    // _o: ($) => optional($._w), //optional whitespace
+
     _expr: ($) => choice($.id, $.number, $.binop, $.commaexpr, $.group, $.scope), //, $.range),
+    _expr_seq: ($) => prec.left(0, seq($._expr, repeat(seq($._w, $._expr)))),
     id: ($) => /[A-Za-zΑ-Ωα-ω_?!$&°][0-9A-Za-zΑ-Ωα-ω_?!$&°]*/u,
     number: ($) => /[0-9]+/,
     binop: ($) =>
@@ -148,13 +152,15 @@ module.exports = grammar({
         ...op_table
           .map((row, i) => ({ i, ...row }))
           .filter(({ assoc, special }) => assoc in prec_fn_map && special !== true)
-          .map(({ assoc, ops, i }) => ops.map((op) => prec_fn_map[assoc](i, seq($._expr, op, $._expr))))
+          .map(({ assoc, ops, i }) =>
+            ops.map((op) => prec_fn_map[assoc](i, seq($._expr, optional($._w), op, optional($._w), $._expr))),
+          )
           .flat(),
       ),
 
-    commaexpr: ($) => prec(precedenceof(","), seq($._expr, repeat1(seq(",", $._expr)))),
-    group: ($) => seq("(", repeat1($._expr), ")"),
-    scope: ($) => seq("{", repeat1($._expr), "}"),
+    commaexpr: ($) => prec(precedenceof(","), seq($._expr, repeat1(seq(optional($._w), ",", optional($._w), $._expr)))),
+    group: ($) => seq("(", optional($._w), $._expr_seq, optional($._w), ")"),
+    scope: ($) => seq("{", optional($._w), $._expr_seq, optional($._w), "}"),
     // range: ($) => seq(choice("[", "("), $.rangeinner, choice("]", ")")),
     // rangeinner: ($) => seq($._expr, token.immediate(".."), token.immediate($._expr)),
     // dotdot: ($) => "..",
