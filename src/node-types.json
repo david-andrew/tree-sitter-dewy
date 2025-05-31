@@ -12,11 +12,128 @@
           "named": true
         },
         {
+          "type": "commaexpr",
+          "named": true
+        },
+        {
+          "type": "group",
+          "named": true
+        },
+        {
           "type": "id",
           "named": true
         },
         {
           "type": "number",
+          "named": true
+        },
+        {
+          "type": "scope",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "commaexpr",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "binop",
+          "named": true
+        },
+        {
+          "type": "commaexpr",
+          "named": true
+        },
+        {
+          "type": "group",
+          "named": true
+        },
+        {
+          "type": "id",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "scope",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "group",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "binop",
+          "named": true
+        },
+        {
+          "type": "commaexpr",
+          "named": true
+        },
+        {
+          "type": "group",
+          "named": true
+        },
+        {
+          "type": "id",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "scope",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "scope",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "binop",
+          "named": true
+        },
+        {
+          "type": "commaexpr",
+          "named": true
+        },
+        {
+          "type": "group",
+          "named": true
+        },
+        {
+          "type": "id",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "scope",
           "named": true
         }
       ]
@@ -36,11 +153,23 @@
           "named": true
         },
         {
+          "type": "commaexpr",
+          "named": true
+        },
+        {
+          "type": "group",
+          "named": true
+        },
+        {
           "type": "id",
           "named": true
         },
         {
           "type": "number",
+          "named": true
+        },
+        {
+          "type": "scope",
           "named": true
         }
       ]
@@ -55,6 +184,14 @@
     "named": false
   },
   {
+    "type": "(",
+    "named": false
+  },
+  {
+    "type": ")",
+    "named": false
+  },
+  {
     "type": "*",
     "named": false
   },
@@ -63,11 +200,15 @@
     "named": false
   },
   {
+    "type": ",",
+    "named": false
+  },
+  {
     "type": "-",
     "named": false
   },
   {
-    "type": ".",
+    "type": "->",
     "named": false
   },
   {
@@ -80,6 +221,10 @@
   },
   {
     "type": ":>",
+    "named": false
+  },
+  {
+    "type": "<->",
     "named": false
   },
   {
@@ -104,10 +249,6 @@
   },
   {
     "type": "<|",
-    "named": false
-  },
-  {
-    "type": "=>",
     "named": false
   },
   {
@@ -143,11 +284,19 @@
     "named": true
   },
   {
+    "type": "{",
+    "named": false
+  },
+  {
     "type": "|",
     "named": false
   },
   {
     "type": "|>",
+    "named": false
+  },
+  {
+    "type": "}",
     "named": false
   }
 ]
