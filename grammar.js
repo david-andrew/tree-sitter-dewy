@@ -7,16 +7,10 @@
 /// <reference types="tree-sitter-cli/dsl" />
 // @ts-check
 
-// const digits = /[0-9]/;
-// const alpha = /[A-Za-z]/;
-// const greek = /[Α-Ωα-ω]/; // ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩαβγδεζηθικλμνξοπρςστυφχψω
-// const misc = /[_?!$&°]/;
-
 const Associativity = Object.freeze({
   LEFT: "left", // left-to-right
   RIGHT: "right", // right-to-left
-  NONE: "none", // non-associative (e.g., a < b < c is often an error or has specific meaning). Get's special handling
-  // FAIL: "fail", // fail if multiple encountered (similar to NONE for Tree-sitter binary ops)
+  NONE: "none", // non-associative (e.g., `a = b = c` or `a, b, c`) things like this should get explicitly defined rules)
   PREFIX: "prefix",
   POSTFIX: "postfix",
 });
@@ -144,7 +138,7 @@ module.exports = grammar({
     _w: ($) => repeat1(choice($._whitespace, $._block_comment, $._line_comment)), //mandatory whitespace
     _o: ($) => optional($._w), //optional whitespace
 
-    _expr: ($) => choice($.id, $.number, $.binop, $.commaexpr, $.group, $.scope), //, $.range),
+    _expr: ($) => choice($.id, $.number, $.binop, $.commaexpr, $.group, $.scope, $.array), //, $.range),
     _expr_seq: ($) => prec.left(0, seq($._expr, repeat(seq($._w, $._expr)))),
     id: ($) => /[A-Za-zΑ-Ωα-ω_?!$&°][0-9A-Za-zΑ-Ωα-ω_?!$&°]*/u,
     number: ($) => /[0-9]+/,
@@ -156,20 +150,48 @@ module.exports = grammar({
           .map(({ assoc, ops, i }) => ops.map((op) => prec_fn_map[assoc](i, seq($._expr, op, $._expr))))
           .flat(),
       ),
-
-    juxcallexpr: ($) => prec(precedenceof(SpecOps.JUX_CALL), seq($._expr, $._expr)),
-    // juxindexexpr
     commaexpr: ($) => prec(precedenceof(","), seq($._expr, repeat1(seq(optional($._w), ",", optional($._w), $._expr)))),
+
+    // void expressions
+    voidgroup: ($) => seq("(", optional($._w), ")"),
+    voidscope: ($) => seq("{", optional($._w), "}"),
+    voidarray: ($) => seq("[", optional($._w), "]"),
+    voidparam: ($) => seq("<", optional($._w), ">"),
+    void: ($) => /void/i,
+
+    // basic delimited expressions
     group: ($) => seq("(", optional($._w), $._expr_seq, optional($._w), ")"),
     scope: ($) => seq("{", optional($._w), $._expr_seq, optional($._w), "}"),
-    // arrayexpr: $ =>
-    // dictexpr: $ =>
-    // objexpr: $ =>
-    // range: ($) => seq(choice("[", "("), $.rangeinner, choice("]", ")")),
-    // rangeinner: ($) => seq($._expr, token.immediate(".."), token.immediate($._expr)),
-    // dotdot: ($) => "..",
+    array: ($) => seq("[", optional($._w), $._expr_seq, optional($._w), "]"),
+    param: ($) => seq("<", optional($._w), $._expr_seq, optional($._w), ">"),
+
+    // range: ($) => prec(1, seq(choice("[", "("), $.barerange, choice("]", ")"))),
+    // barerange: ($) => prec(precedenceof(SpecOps.RANGE_JUX), seq($._expr, $.dotdot, $._expr)),
+    dotdot: ($) => "..",
+    dotdotdot: ($) => "...",
+
+    dictitem: ($) => seq($._expr, optional($._w), "->", optional($._w), $._expr),
+    bidictitem: ($) => seq($._expr, optional($._w), "<->", optional($._w), $._expr),
+    obj: ($) => prec(1, seq("[", optional($._w), seq($.assign, repeat(seq($._w, $.assign))), optional($._w), "]")),
+    dict: ($) => prec(1, seq("[", optional($._w), seq($.dictitem, repeat(seq($._w, $.dictitem))), optional($._w), "]")),
+    bidict: ($) => prec(1, seq("[", optional($._w), seq($.bidictitem, repeat(seq($._w, $.bidictitem))), optional($._w), "]")),
+    assign: ($) => seq($._assigntarget, optional($._w), choice("::", "="), optional($._w), $._expr),
+    _assigntarget: ($) => choice($.id), //, $.unpacktarget, $.typedid, $.typedunpacktarget),
+    // _unpacktarget: ($) =>
+    //   choice(
+    //     seq("(", choice($.assign, $._assigntarget), repeat(seq($._w, choice($.assign, $._assigntarget))), optional($._w), ")"),
+    //     seq("[", choice($.assign, $._assigntarget), repeat(seq($._w, choice($.assign, $._assigntarget))), optional($._w), "]"),
+    //     seq("{", choice($.assign, $._assigntarget), repeat(seq($._w, choice($.assign, $._assigntarget))), optional($._w), "}"),
+    //     // seq(","),
+    //   ),
+    // typedid: ($) => seq($.id, ":", optional($._w), $._typeexpr),
+
     // ellipsis: ($) => "...",
-    // scope: $ => { },
+
+    // juxtapose expressions
+    juxcallexpr: ($) => prec(precedenceof(SpecOps.JUX_CALL), seq($._expr, $._expr)),
+    // juxindexexpr: $ => prec(precedenceof(SpecOps.JUX_INDEX), seq($._expr, $.arrayexpr))
+
     // unpacktarget: ($) => {},
     // typed_id: ($) => seq($.id, ":", $._type_expr),
     // _typeexpr: $ => s

@@ -1,5 +1,44 @@
 [
   {
+    "type": "array",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "array",
+          "named": true
+        },
+        {
+          "type": "binop",
+          "named": true
+        },
+        {
+          "type": "commaexpr",
+          "named": true
+        },
+        {
+          "type": "group",
+          "named": true
+        },
+        {
+          "type": "id",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "scope",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "binop",
     "named": true,
     "fields": {},
@@ -7,6 +46,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "array",
+          "named": true
+        },
         {
           "type": "binop",
           "named": true
@@ -43,6 +86,10 @@
       "required": true,
       "types": [
         {
+          "type": "array",
+          "named": true
+        },
+        {
           "type": "binop",
           "named": true
         },
@@ -77,6 +124,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "array",
+          "named": true
+        },
         {
           "type": "binop",
           "named": true
@@ -113,6 +164,10 @@
       "required": true,
       "types": [
         {
+          "type": "array",
+          "named": true
+        },
+        {
           "type": "binop",
           "named": true
         },
@@ -148,6 +203,10 @@
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "array",
+          "named": true
+        },
         {
           "type": "binop",
           "named": true
@@ -273,6 +332,14 @@
   },
   {
     "type": ">?",
+    "named": false
+  },
+  {
+    "type": "[",
+    "named": false
+  },
+  {
+    "type": "]",
     "named": false
   },
   {
