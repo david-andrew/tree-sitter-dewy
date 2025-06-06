@@ -129,14 +129,14 @@ module.exports = grammar({
 
   rules: {
     // entrypoint
-    source_file: ($) => seq(optional($._w), optional(seq($._expr_seq, optional($._w)))),
+    source_file: ($) => choice(optional($._w), seq(optional($._w), $._expr_seq, optional($._w))),
 
     // whitespace and comments
     _block_comment: ($) => prec(0, seq("%{", repeat(choice($._block_comment, /./, "\n")), "}%")), // let tree sitter handle nesting
     _line_comment: ($) => prec(-1, /%.*\n?/), // lower precedence than block comment
     _whitespace: ($) => /\s+/,
     _w: ($) => repeat1(choice($._whitespace, $._block_comment, $._line_comment)), //mandatory whitespace
-    _o: ($) => optional($._w), //optional whitespace
+    // _o: ($) => optional($._w), //optional whitespace
 
     _expr: ($) => choice($.id, $.number, $.binop, $.commaexpr, $.group, $.scope, $.array), //, $.range),
     _expr_seq: ($) => prec.left(0, seq($._expr, repeat(seq($._w, $._expr)))),

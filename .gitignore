@@ -45,3 +45,9 @@ dist/
 .direnv
 .envrc
 shell.nix
+
+
+
+# random testing and notes files
+tasks.txt
+test.dewy
